@@ -49,7 +49,7 @@ class MoviesETL:
         Establecer conexión con MySQL
         """
         if mysql is None:
-            logger.error("❌ mysql.connector no está disponible; instala el paquete con: pip install mysql-connector-python")
+            logger.error("mysql.connector no está disponible; instala el paquete con: pip install mysql-connector-python")
             return False
 
         try:
@@ -62,10 +62,10 @@ class MoviesETL:
             )
             
             if self.connection.is_connected():
-                logger.info("✓ Conexión exitosa a MySQL")
+                logger.info("Conexión exitosa a MySQL")
                 return True
         except Error as e:
-            logger.error(f"❌ Error conectando a MySQL: {e}")
+            logger.error(f"Error conectando a MySQL: {e}")
             return False
     
     def close_connection(self):
@@ -80,7 +80,7 @@ class MoviesETL:
         """
         Crear tabla en MySQL si no existe
         """
-        logger.info("📊 Creando/verificando tabla en MySQL...")
+        logger.info("Creando/verificando tabla en MySQL...")
         
         create_table_query = """
         CREATE TABLE IF NOT EXISTS movies (
@@ -108,18 +108,18 @@ class MoviesETL:
             cursor = self.connection.cursor()
             cursor.execute(create_table_query)
             self.connection.commit()
-            logger.info("  ✓ Tabla 'movies' lista")
+            logger.info("Tabla 'movies' lista")
             cursor.close()
             return True
         except Error as e:
-            logger.error(f"❌ Error creando tabla: {e}")
+            logger.error(f"Error creando tabla: {e}")
             return False
     
     def extract(self):
         """
         EXTRACT: Cargar los datos de ambos CSV
         """
-        logger.info("📥 EXTRAYENDO datos...")
+        logger.info("EXTRAYENDO datos...")
         
         try:
             # Cargar top_rated_movies.csv
@@ -128,7 +128,7 @@ class MoviesETL:
                 encoding='utf-8',
                 on_bad_lines='skip'
             )
-            logger.info(f"  ✓ Top rated movies: {len(self.df_top_rated)} registros")
+            logger.info(f"Top rated movies: {len(self.df_top_rated)} registros")
             
             # Cargar movies_id_genre_director.csv
             self.df_genre_director = pd.read_csv(
@@ -136,19 +136,19 @@ class MoviesETL:
                 encoding='utf-8',
                 on_bad_lines='skip'
             )
-            logger.info(f"  ✓ Genre/Director data: {len(self.df_genre_director)} registros")
+            logger.info(f"Genre/Director data: {len(self.df_genre_director)} registros")
             
             return True
             
         except Exception as e:
-            logger.error(f"❌ Error en extracción: {e}")
+            logger.error(f"Error en extracción: {e}")
             return False
     
     def transform(self):
         """
         TRANSFORM: Limpiar, validar y estandarizar datos
         """
-        logger.info("🔄 TRANSFORMANDO datos...")
+        logger.info("TRANSFORMANDO datos...")
         
         # 1. Limpiar nombres de columnas
         self.df_top_rated.columns = self.df_top_rated.columns.str.strip()
@@ -198,7 +198,7 @@ class MoviesETL:
         self.df_top_rated = self.df_top_rated.dropna(subset=['id'])
         self.df_genre_director = self.df_genre_director.dropna(subset=['id'])
         
-        logger.info("  ✓ Datos transformados correctamente")
+        logger.info("Datos transformados correctamente")
         
         return True
     
@@ -206,7 +206,7 @@ class MoviesETL:
         """
         Unificar ambos DataFrames
         """
-        logger.info("🔗 UNIFICANDO datasets...")
+        logger.info("UNIFICANDO datasets...")
         
         # Merge de ambos DataFrames
         self.df_unified = pd.merge(
@@ -229,7 +229,7 @@ class MoviesETL:
             pd.notna(self.df_unified['release_date']), None
         )
         
-        logger.info(f"  ✓ Dataset unificado: {len(self.df_unified)} registros")
+        logger.info(f"Dataset unificado: {len(self.df_unified)} registros")
         
         return True
     
@@ -237,10 +237,10 @@ class MoviesETL:
         """
         LOAD: Cargar datos a MySQL usando UPSERT (INSERT ON DUPLICATE KEY UPDATE)
         """
-        logger.info("📤 CARGANDO datos a MySQL...")
+        logger.info("CARGANDO datos a MySQL...")
         
         if truncate:
-            logger.info("  ⚠ Truncando tabla antes de cargar...")
+            logger.info("Truncando tabla antes de cargar...")
             cursor = self.connection.cursor()
             cursor.execute("TRUNCATE TABLE movies")
             self.connection.commit()
@@ -295,19 +295,19 @@ class MoviesETL:
                     cursor.executemany(insert_query, batch_data)
                     self.connection.commit()
                     inserted += len(batch_data)
-                    logger.info(f"  ✓ Batch {start_idx//batch_size + 1}: {inserted}/{total_rows} registros")
+                    logger.info(f"Batch {start_idx//batch_size + 1}: {inserted}/{total_rows} registros")
                 except Error as e:
                     errors += len(batch_data)
-                    logger.error(f"  ❌ Error en batch {start_idx//batch_size + 1}: {e}")
+                    logger.error(f"Error en batch {start_idx//batch_size + 1}: {e}")
                     self.connection.rollback()
             
             cursor.close()
-            logger.info(f"\n  ✅ Carga completada: {inserted} registros exitosos, {errors} errores")
+            logger.info(f"\n Carga completada: {inserted} registros exitosos, {errors} errores")
             
             return True
             
         except Exception as e:
-            logger.error(f"❌ Error general en carga: {e}")
+            logger.error(f"Error general en carga: {e}")
             cursor.close()
             return False
     
@@ -315,14 +315,14 @@ class MoviesETL:
         """
         Validar que los datos se cargaron correctamente
         """
-        logger.info("\n✅ VALIDANDO carga en MySQL...")
+        logger.info("\n VALIDANDO carga en MySQL...")
         
         cursor = self.connection.cursor(dictionary=True)
         
         # Contar registros totales
         cursor.execute("SELECT COUNT(*) as total FROM movies")
         total = cursor.fetchone()['total']
-        logger.info(f"  📊 Total de registros en MySQL: {total}")
+        logger.info(f" Total de registros en MySQL: {total}")
         
         # Estadísticas básicas
         cursor.execute("""
